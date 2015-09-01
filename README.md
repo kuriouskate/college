@@ -1,2 +1,2 @@
 # college
-Work done in college
+Work done or taught in college
