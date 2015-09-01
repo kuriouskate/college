@@ -1,0 +1,36 @@
+m = 1000 # we focus on the first 1000 nucleotide sequences
+dat = read.table("GSE7621.csv", header=TRUE, nrows = m)
+dat = dat[,-1] # remove the ID
+pval = numeric(m)
+for (i in 1:m) {
+	pval[i] = t.test(dat[i,1:9], dat[i,-(1:9)])$p.value
+	}
+
+ind = order(pval) 
+pval = sort(pval)
+
+# corrected p-values
+pval.bon = p.adjust(pval, "bon")
+pval.holm = p.adjust(pval, "holm")
+pval.hoch = p.adjust(pval, "hoch") # requires special assumptions to control FWER
+pval.bh = p.adjust(pval, "BH") # requires special assumptions to control FDR
+
+matplot(cbind(pval, pval.bon, pval.holm, pval.hoch, pval.bh), type = "l", lwd=2, ylab="Adjusted p-values")
+abline(h = 0.05, lty=3) # 5% level
+legend('bottomright', c('raw', 'bonferroni', 'holm', 'hochberg', 'benjamini-hochberg'), lty=1:5, col=1:5, lwd=2, bg='white')
+
+matplot(cbind(pval, pval.bon, pval.holm, pval.hoch, pval.bh), type = "l", lwd=2, xlim=c(1,10), ylab="Adjusted p-values")
+abline(h = 0.05, lty=3) # 5% level
+legend('topleft', c('raw', 'bonferroni', 'holm', 'hochberg', 'benjamini-hochberg'), lty=1:5, col=1:5, lwd=2, bg='white')
+
+# Although 83 raw p-values are below 5%, when adjusted by these different methods, none of them is below 5%.  
+
+
+rm() # removes variables from workspace
+load("smokers.rda")
+dat = stack(smokers)
+attach(dat)
+pairwise.t.test(values, ind)
+pairwise.wilcox.test(values, ind, "BH")
+TukeyHSD(aov(values ~ ind))
+
