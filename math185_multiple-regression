@@ -1,0 +1,33 @@
+# we use mtcars dataset
+require(MASS)
+dat = mtcars[,c(1,3:7)]
+attach(dat)
+
+plot(dat, pch=16)
+
+# correlation plot
+require(ellipse)
+plotcorr(cor(dat))
+
+# let's fit a simple linear model via least-squares
+fit = lm(mpg ~ ., data = dat)
+summary(fit)
+
+# CIs for the coefficients 
+confint(fit)
+# (note that the _combined_ level is _not_ 95%)
+
+# 95% confidence interval for the mean response at a given predictor vector
+new = data.frame(disp=200, hp=120, drat=3.5, wt=3.1, qsec=18)
+predict(fit, new, interval='confidence')
+
+# Explaining the (adjusted) R-squared
+fit0 = lm(mpg ~ disp)
+par(mfrow=c(1,2))
+plot(disp, mpg)
+abline(fit0)
+boxplot(mpg-mean(mpg), residuals(fit0), names=c('mpg (centered)', 'residuals'))
+
+# comparing models with ANOVA
+fit0 = lm(mpg ~ disp + wt) # a model with only disp and wt, implicitly assuming that the other variables are not in the model
+anova(fit0, fit) # ANOVA F-test comparing this simpler model with the model above that includes all 6 predictor variables
