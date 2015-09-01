@@ -1,0 +1,21 @@
+attach(cars)
+
+# boxplots (usually not side-by-side, since they are in different units)
+par(mfrow=c(1,3))
+boxplot(speed, main="Speed")
+boxplot(dist, main="Stopping distance")
+
+# scatterplot
+plot(speed, dist, pch=16, main="Stopping distance  vs Speed", xlab="SPEED", ylab="DISTANCE")
+
+# summary statistics and correlations
+summary(cars)
+cor(cars) # matrix of Pearson's correlations
+cor(cars, method="spearman") # Spearman's correlation
+cor(cars, method="kendall") # Kendall's correlation
+
+# correlation tests
+cor.test(speed, dist) # the p-value relies on the normality assumption
+cor.test(speed, dist,  method="spearman")
+cor.test(speed, dist,  method="kendall")
+
