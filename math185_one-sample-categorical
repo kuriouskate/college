@@ -1,0 +1,67 @@
+load('casino_die.rda')
+
+dat = casino_die # shorthand
+str(dat) # stored as numerical
+dat = as.factor(dat) # change to categorical
+str(dat)
+
+# computing frequencies/counts
+tab = table(dat) # counts membership in each class
+tab
+summary(dat) # same information
+n = length(dat) # sample size
+tab/n # computes proportions
+
+# plots
+pie(tab, radius = 1, main='PIE CHART') # pie chart 
+barplot(tab, names.arg=1:6, xlab="Digits", ylab="Counts", main='BARPLOT') # barplot
+
+# chi-squared test against the uniform
+chisq.test(tab)  # the p-value is computed based on the asymptotic distribution
+
+# Montecarlo simulations to compute the p-value
+D = chisq.test(tab)$stat # original statistic
+B = 2000 # number of Montecarlo samples
+D.array = numeric(B) # will store the simulated D statistics
+for (b in 1:B) {
+	X = sample(1:6, n, TRUE)
+	D.array[b] = chisq.test(table(X))$stat
+	}
+sum(D.array >= D)/(B+1)
+
+# In fact, this can be done directly with the function chisq.test()
+chisq.test(tab, sim = T) # w/ simulations (the p-value varies with each batch of simulations)
+
+# In all cases, the p-values is large, so the null hypothesis is NOT rejected
+
+
+# plots of the chi-squared distribution PDF for an increasing number of degrees of freedom
+M = c(1:5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 100, 200)
+for (m in M){
+	curve(dchisq(x, m), 0, 3*m, lwd=2, col=4)
+	title(sprintf('degrees of freedom = %d', round(m)))
+	Sys.sleep(0.5)
+	}
+	
+
+# Natality data taken from http://wonder.cdc.gov/natality.html
+dat = read.table('natality-month-2010.txt', skip=1, nrows=12)
+month = substr(dat[,1], 1, 3)
+dat = dat[,3]
+
+# These are birth counts in the US per month in the year 2010
+# We want to know whether births are equally likely in any month of the year  
+barplot(dat, names=month, ylab='number of births')
+
+# test against the uniform distribution
+test = chisq.test(dat)
+names(test)
+
+# compare observed and expected visually
+barplot(rbind(dat, test$expected), beside=T, names=month)
+
+# a look at the Pearson residuals
+plot(test$residuals, type='h', col=4, lwd=2, xlab='Month', ylab=' ', main='Pearson residuals')
+abline(h=0, lty=2)
+
+
