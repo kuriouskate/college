@@ -1,0 +1,92 @@
+# EXAMPLE (Larsen \& Marx, case study 12.2.1.)
+load("smokers.rda")
+(dat = smokers)
+attach(dat, warn.conflicts = FALSE)
+
+summary(dat)
+boxplot(dat, col=c("#ffffff","#cccccc","#777777","#333333"), ylab='Heart Rate')
+
+# one-way ANOVA (with equal variances)
+oneway.test(values ~ ind, data = stack(dat), var.equal=TRUE)
+# ANOVA table
+dat.aov = aov(values ~ ind, data = stack(dat))
+summary(dat.aov)
+
+# alternatively, one can stack the data first
+stack.dat = stack(dat)
+names(stack.dat) = c("heart.rate", "group")
+stack.dat.aov = aov(heart.rate ~ group, data = stack.dat)
+summary(stack.dat.aov)
+
+# one-way ANOVA (with unequal variances)
+oneway.test(values ~ ind, data = stack(dat))
+
+# checking that one-way ANOVA is equivalent to t-test on bivariate data (the same p-value is returned)
+t.test(non,heavy, var.equal=TRUE)
+oneway.test(values ~ ind, data = stack(dat[,c(1,4)]), var.equal=TRUE)
+
+# diagnostic plots for ANOVA
+par(mfrow=c(1,2))
+plot(dat.aov, which = 1) # residuals vs means plot
+plot(dat.aov, which = 2) # qqplot of the residuals
+
+# straight plot of the residuals, which may be used to check for serial correlation (though rarely done on data like this one)
+plot(dat.aov$res, ylab='Residuals')
+
+# Tukey HSD
+Diff = TukeyHSD(dat.aov)
+plot(Diff, cex.axis=0.8)
+
+# Kruskal-Wallis
+kruskal.test(dat)
+
+# Kruskal-Wallis test = Wilcoxon rank-sum test on bivariate data
+kruskal.test(dat[,c(2,3)])
+wilcox.test(light, moderate, correct=FALSE)
+
+
+# EXAMPLE (from http://www.statsci.org/data/general/energy.html)
+dat = read.table(url('http://www.statsci.org/data/general/energy.txt'), header=TRUE)
+dat = as.matrix(dat[,-1])
+friedman.test(dat)
+
+
+
+
+##########################################
+
+# ToothGrowth is readily available in R
+dat = ToothGrowth
+attach(dat)
+dose = as.factor(dose)
+
+# side-by-side boxplots (taken from ?boxplot)
+boxplot(len ~ dose,
+        boxwex = 0.25, at = 1:3 - 0.2,
+        subset = supp == "VC", col = "yellow",
+        main = "Guinea Pigs' Tooth Growth",
+        xlab = "Vitamin C dose mg",
+        ylab = "tooth length",
+        xlim = c(0.5, 3.5), ylim = c(0, 35), yaxs = "i")
+boxplot(len ~ dose, add = TRUE,
+        boxwex = 0.25, at = 1:3 + 0.2,
+        subset = supp == "OJ", col = "orange")
+legend(2, 9, c("Ascorbic acid", "Orange juice"),
+       fill = c("yellow", "orange"))
+
+# interactions plot
+interaction.plot(ordered(dose), supp, len, col=2:3, lwd=3)
+
+# fitting a two-way ANOVA model with interactions
+dat.aov =  aov(len ~ supp*dose)
+summary(dat.aov)
+par(mfrow=c(1,2))
+plot(dat.aov, which = 1) # residual plot
+plot(dat.aov, which = 2) # qqplot of the residuals
+
+# fitting a two-way ANOVA model without interactions
+dat.aov0 =  aov(len ~ supp + dose)
+summary(dat.aov0)
+par(mfrow=c(1,2))
+plot(dat.aov0, which = 1) # residual plot
+plot(dat.aov0, which = 2) # qqplot of the residuals
