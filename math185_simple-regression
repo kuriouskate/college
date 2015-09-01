@@ -1,0 +1,47 @@
+attach(cars)
+
+# scatterplot
+plot(cars, pch=16)
+
+# least squares regression
+fit = lm(dist ~ speed)
+summary(fit)
+
+# a plot of the regression line over the scatterplot
+plot(speed, dist, pch=16)
+abline(fit, col='red', lwd = 2)
+
+# CIs for the coefficients
+confint(fit)
+
+# CIs for the conditional mean of y at a given x
+fit = lm(dist ~ speed, data = cars) # needs to be of this form
+xnew = data.frame(speed = 5)
+predict(fit, xnew, interval = 'confidence')  
+
+# steam dataset
+require(MASS)
+attach(steam)
+
+plot(steam, pch =16) # the relation does not appear affine
+fit0 = lm(Press ~ Temp)
+abline(fit0, col=4, lwd=2)
+
+# instead fit the model predicted by physics
+T0 = 273.15
+plot(log(Press) ~ I(1/(T0 + Temp)), pch=16)
+fit = lm(log(Press) ~ I(1/(T0 + Temp)))
+abline(fit, col=2, lwd=2) 
+# the fit is much better (in fact excellent) with the SAME number of parameters
+summary(fit)
+
+# plot in the original scale
+par(mfrow = c(1,2))
+plot(log(Press) ~ I(1/(T0 + Temp)), pch=16)
+abline(fit, col=2, lwd=2)
+
+plot(steam, pch=16)
+fit.orig = exp(predict(fit))
+lines(Temp, fit.orig, col=2, lwd=2)
+abline(fit0, col=4, lwd=2)
+
