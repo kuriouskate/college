@@ -1,0 +1,114 @@
+# Newcomb's speed measurements
+load("speed-of-light.rda")
+speed.of.light
+dat = speed.of.light
+n = length(dat)
+
+# Summary statistics
+summary(dat)
+mean(dat)
+median(dat)
+quantile(dat, (0:10)/10)
+sd(dat) # same as sqrt(var(dat))
+mad(dat)
+
+# Plots
+boxplot(dat)
+boxplot(dat, pch=4, col=6, horizontal=TRUE)
+
+hist(dat, freq=FALSE) # bins are automatically chosen
+rug(dat, lwd=3) # adds tick marks at the observations
+hist(dat, 5) # w/ specified number of bins
+hist(dat, breaks=c(-50, 0, 10, 15, 20, 25, 35, 50)) # w/ specified bins
+
+# boxplot and histogram correspondence
+require(UsingR)
+simple.hist.and.boxplot(dat, main='Histogram and boxplot')
+
+
+# the t-test function in R returns a student confidence interval
+out = t.test(dat, conf=0.90)
+names(out)
+out$conf.int
+
+# bootstrap Student CI for the median
+B = 2000
+out = numeric(B)
+for (b in 1:B) {
+	x = sample(dat, n, TRUE) # bootstrap sample
+	out[b] = median(x)
+	}
+median.se.boot = sd(out) # estimate for the standard deviation
+alpha = 0.10
+I = c(median(dat) + qt(0.05, n-1)*median.se.boot, median(dat) + qt(0.95, n-1)*median.se.boot)
+
+
+# Suppose we want to test whether the data are normal.  We remove the two negative values, for otherwise the fit is guaranteed to be bad.
+Ind = which(dat < 0)
+dat = dat[-Ind]
+n = length(dat)
+
+# MLE
+require(MASS)
+fit = fitdistr(dat, "normal")
+mu = fit$est[1]
+sigma = fit$est[2]
+
+# comparing histogram with fitted density
+H = hist(dat, 30, col="grey", freq=FALSE, xlim=c(10, 50))
+t = seq(0, 60, len = 100)
+lines(t, dnorm(t, mean=mu, sd=sigma), col=2, lwd = 3)
+
+# expected counts for these particular bins
+P = pnorm(H$breaks, mean=mu, sd=sigma)
+exp.counts = n*diff(P)
+obs.counts = table(cut(dat, H$breaks))
+
+# barplot comparing counts
+barplot(rbind(obs.counts, exp.counts), beside=TRUE, legend.text=c("Observed ", "Expected"), args.legend=list(x = "topleft"), xlab="dat", ylab="Frequency")
+
+# For testing, we choose bins so that the expected counts under the null are at least 
+# chi-square GOF test 
+chisq.test(obs.counts, p=exp.counts, rescale.p=TRUE)
+# The rule of thumb is not satisfied with our choice of bins, but one can obtain a p-value by  Montecarlo simulations:  
+chisq.test(obs.counts, p=exp.counts, rescale.p=TRUE, sim=TRUE)
+
+# In both cases, the p-value is not accurate because the normal distribution was not given to us but estimated from the data.  An accurate p-value can be obtained via the parametric bootstrap.  Here we do not make the choice of bins part of the bootstrap.
+
+test = chisq.test(obs.counts, p=exp.counts, rescale.p=TRUE)
+D = test$stat # observed statistic
+
+B = 2000
+D.boot = numeric(B)
+for (b in 1:B) { 
+	dat.boot = rnorm(n, mean=mu, sd=sigma)
+	# to make the choice of bins part of the bootstrap, recompute H 
+	# H = hist(dat.boot, 30, plot=FALSE) 
+	mu.boot = mean(dat.boot) 
+	sigma.boot = sd(dat.boot)
+	P = pnorm(H$breaks, mean=mu.boot, sd=sigma.boot)
+	exp.counts = n*diff(P)
+	obs.counts = table(cut(dat.boot, H$breaks))
+	test = chisq.test(obs.counts, p=exp.counts, rescale.p=TRUE)
+	D.boot[b] = test$stat
+	}
+R = sum(D.boot <= D)
+p.value = 1 - R/(B+1)
+
+
+# comparing empirical CDF with fitted CDF
+plot(ecdf(dat), verticals=TRUE, xlab='', ylab='', xlim=c(10,50), lwd=3, main='empirical and fitted CDFs')
+lines(t, pnorm(t, mean=mu, sd=sigma), col='red', lwd=3)
+rug(dat, lwd=2)
+
+# Kolmogorov-Smirnov test
+ks.test(dat,"pnorm", mean=mu, sd=sigma)
+# Again, besides the ties in the data, the p-value is not accurate because the normal distribution was not given to us but estimated from the data.  One has to resort to the parametric bootstrap.
+
+# In fact, this is what the Lilliefors test does.
+require(nortest)
+lillie.test(dat)
+
+# Mystery!  The test statistics should have the same value.  This is the case with the following (which should be equivalent to what we did above, but is not)
+ks.test(dat,"pnorm", mean=mean(dat), sd=sd(dat))
+
