@@ -1,0 +1,108 @@
+### Tire wear data from http://lib.stat.cmu.edu/DASL/Datafiles/differencetestdat.html
+load('tire.wear.rda')
+tire.wear
+attach(tire.wear)
+
+# We want to decide whether the two methods give similar results, or not.  After taking the difference, we apply the Wilcoxon signed-rank test (for example):
+dat.diff = WGT - GRO
+boxplot(dat.diff) 
+# There is overwhleming visual evidence that the weight method yields larger measurements then the grove method
+t.test(dat.diff)
+# The very small p-value confirms that suspicion.
+qqnorm(dat.diff); qqline(dat.diff) 
+# The data are approximately normal, so the p-value is deemed reliable.
+
+# We can take ratios instead
+dat.ratio = WGT/GRO
+boxplot(dat.ratio) 
+# Again, strong evidence supporting the same conclusion
+t.test(dat.ratio, mu=1)
+# The very small p-value confirms that suspicion.
+qqnorm(dat.ratio); qqline(dat.ratio) 
+# The data are approximately normal, so the p-value is deemed reliable.
+# Alternatively, one can take the difference in logs and test whether the mean is zero.
+
+
+### Cloud seeding data from http://lib.stat.cmu.edu/DASL/Stories/CloudSeeding.html
+# The description is not clear, so we will assume that the samples are NOT paired
+load("cloudseeding.rda")
+dat = cloudseeding
+str(dat)
+X = dat[,1]
+Y = dat[,2]
+
+# Summaries and graphics
+summary(dat)
+# side-by-side boxplots
+boxplot(dat, col=c("blue","green"), names = c('Unseeded', 'Seeded'), ylab='Rainfall') 
+# histograms
+par(mfrow=c(1,2))
+hist(X, col="blue", main='Unseeded', xlab='', breaks=7)
+hist(Y, col="green", main='Seeded', xlab='', breaks=7)
+
+# t-test
+t.test(X, Y,  alternative="less", var.equal = TRUE)
+t.test(X, Y, alternative="less")
+
+# q-q plots
+par(mfrow=c(1,2))
+qqnorm(X, pch=21, bg="blue")
+qqline(X)
+qqnorm(Y, pch=21, bg="green")
+qqline(Y)
+
+# boxplot after transformation
+boxplot(log(X), log(Y))
+
+# q-q plots of transformed data
+par(mfrow=c(1,2))
+qqnorm(log(X), pch=21, bg="blue")
+qqline(log(X))
+qqnorm(log(Y), pch=21, bg="green")
+qqline(log(Y))
+
+t.test(log(X), log(Y), alternative="less")
+# The p-value is more trustworthy here that the distributions are not very skewed anymore.
+
+
+# Permutation test based on the difference in sample means
+B = 100000
+
+# straight implementation using a for loop
+m = length(X)
+n = length(Y)
+D = mean(Y)-mean(X)
+Z = c(X, Y)
+D.sim = numeric(B)
+for (b in 1:B) {
+	Ind = sample(m+n)
+	D.sim[b] = mean(Z[Ind[(m+1):(m+n)]]) - mean(Z[Ind[1:m]])
+	}
+p.val = 1 - sum(D.sim <= D)/(B+1)
+hist(D.sim, breaks=50, main='Histogram of permutated differences')
+abline(v=D, col=2, lwd=2)
+
+# another implementation uses the function replicate()
+one.perm.diff = function(x, y) {
+	m = length(x)
+	z = c(x, y)
+	Ind = sample(length(z))
+	mean(z[Ind[-(1:m)]]) -mean(z[Ind[1:m]])
+	}
+D.sim = replicate(B, one.perm.diff(X, Y))
+
+
+# Wilcoxon rank-sum test (same as Mann-Whitney U-test)
+wilcox.test(X, Y, alternative="less")
+
+# two-sample kolmogorov-smirnov test
+ks.test(X, Y, alternative="greater")
+# a plot comparing the empirical CDFs
+plot(ecdf(X), xlim=range(dat), verticals=TRUE, xlab='Rainfall', ylab='', col='blue', main='Empirical CDFs')
+lines(ecdf(Y), verticals=TRUE, col='green')
+
+# median test
+source("median.test.R")
+median.test(X, Y, alternative="less")
+
+
